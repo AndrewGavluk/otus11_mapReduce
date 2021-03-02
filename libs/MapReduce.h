@@ -16,8 +16,8 @@ class MapReduce
     public:
         MapReduce() = delete;
         MapReduce(std::string&, size_t&, size_t&);
-        //bool setMapper(void (*_mapper)(std::ifstream&, pos_t, pos_t, vString_t&));
-        //bool setSpliter(void (*_reducer)(vString_t&, std::ofstream&));
+        bool setMapper(void (*_mapper)(std::ifstream&, pos_t, pos_t, vString_t&));
+        bool setSpliter(void (*_reducer)(vString_t&, std::ofstream&));
 
         void start();
 
@@ -28,9 +28,9 @@ class MapReduce
         void sort();
         void reduce();
 
-        void sample(pos_t, pos_t){};
-        //void (*m_mapperThread)(std::ifstream& fileIn, pos_t, pos_t, vString_t&);
-        //void (*m_reducerThread)(vString_t&, std::ofstream&);
+        void sample(std::ifstream&, pos_t, pos_t, vString_t&){};
+        void (*m_mapperThread)(std::ifstream& fileIn, pos_t, pos_t, vString_t&);
+        void (*m_reducerThread)(vString_t&, std::ofstream&);
         template <typename T1, typename T2>
         bool setFunction(T1*, T2*);
 

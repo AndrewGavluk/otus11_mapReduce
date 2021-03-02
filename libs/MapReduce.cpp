@@ -6,7 +6,7 @@ MapReduce::MapReduce(std::string& filename, size_t& _mapNum, size_t& _redNum) : 
     m_maperResults.reserve(_mapNum);
     m_inputFile.open(filename);
 }
-/*
+
 bool MapReduce::setMapper(void (*_mapper)(std::ifstream&, pos_t, pos_t,  vString_t&))
 {
     return setFunction( m_mapperThread , _mapper);
@@ -15,7 +15,7 @@ bool MapReduce::setMapper(void (*_mapper)(std::ifstream&, pos_t, pos_t,  vString
 bool MapReduce::setSpliter(void (*_reducer)(vString_t&, std::ofstream&))
 {
     return setFunction( m_reducerThread , _reducer);
-}*/
+}
 
 void MapReduce::split()
 {
@@ -40,27 +40,24 @@ void MapReduce::split()
 void MapReduce::map()
 {
     std::vector<std::thread> tasks{m_borders.size()};
-
-    std::iostream::pos_type begin{0};
     
     // run mapping function
-    //size_t counter{0}; 
-
-    std::for_each(m_borders.cbegin(), m_borders.cend(), [&] (std::iostream::pos_type end){
-        //tasks.emplace_back(&MapReduce::sample, std::ref(*this), std::ref(m_inputFile), std::ref(begin), std::ref(end), std::ref(m_maperResults[counter++]));
-        std::thread t1 {&MapReduce::sample, std::ref(*this), begin,  end};
-        //tasks.emplace_back(&MapReduce::sample, std::ref(*this), std::ref(m_inputFile));
+    size_t counter{0}; 
+    std::iostream::pos_type begin{0};
+    for (auto& end : m_borders ){
+        tasks.emplace_back(&MapReduce::sample, std::ref(*this), std::ref(m_inputFile), std::ref(begin), std::ref(end), std::ref(m_maperResults[counter++]));
         begin = end;
-    });
+    }
 
     // join and sort
-    /*counter = 0;
-    std::for_each(m_borders.cbegin(), m_borders.cend(), [&] (std::thread task){
+    counter = 0;
+    for (auto& task : tasks  )
+    {
         if (task.joinable()){
             task.join();
             std::sort(m_maperResults[counter].begin(), m_maperResults[counter].end());
         }
-        ++counter;
-    });*/
+        ++counter; 
+    }
 
 }
