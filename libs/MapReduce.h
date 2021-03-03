@@ -7,17 +7,20 @@
 #include <stdlib.h>
 #include <vector>
 
+#include "queue.h"
+
 class MapReduce
 {
     typedef std::iostream::pos_type  pos_t;
     typedef std::vector<std::string> vString_t;
     typedef std::vector<vString_t> v2String_t;
+    typedef std::vector<tsVector<std::string>> vTsvString;
 
     public:
         MapReduce() = delete;
         MapReduce(std::string&, size_t&, size_t&);
-        bool setMapper(void (*_mapper)(std::ifstream&, pos_t, pos_t, vString_t&));
-        bool setSpliter(void (*_reducer)(vString_t&, std::ofstream&));
+        bool setMapper(void (*_mapper)(std::ifstream&, pos_t&, pos_t&, vString_t&));
+        bool setReducer(void (*_reducer)(vString_t&));
 
         void start();
 
@@ -25,16 +28,22 @@ class MapReduce
         
         void split();
         void map();
-        void sort();
+        void shuffle();
         void reduce();
 
-        void sample(std::ifstream&, pos_t, pos_t, vString_t&){};
-        void (*m_mapperThread)(std::ifstream& fileIn, pos_t, pos_t, vString_t&);
-        void (*m_reducerThread)(vString_t&, std::ofstream&);
+        void (*m_mapperThread)(std::ifstream& fileIn, pos_t&, pos_t&, vString_t&); 
+        void mapperThread(std::ifstream& fileIn, pos_t begin , pos_t end , vString_t& vStr);
+
+        void (*m_reducerThread)(vString_t&);
+        void reducerThread(vString_t& StrIn)
+            {(*m_reducerThread) (StrIn);};
+
         template <typename T1, typename T2>
         bool setFunction(T1*, T2*);
 
-        v2String_t                              m_maperResults;
+        v2String_t                              m_MapperResults;
+        vTsvString                              m_ReducerResults;
+        vString_t                               m_sorterResults;
         std::vector<std::iostream::pos_type>    m_borders;
         std::ifstream                           m_inputFile;
         size_t                                  m_mapNum, m_redNum;

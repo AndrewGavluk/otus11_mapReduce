@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.9) 
 
-add_executable(join_server main.cpp)
-set_target_properties(join_server PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQIRED ON)
-target_link_libraries(join_server PRIVATE pthread boost_system)
+add_executable(mapReduce main.cpp)
+set_target_properties(mapReduce PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQIRED ON)
+target_link_libraries(mapReduce PRIVATE pthread boost_system mapReduceLib)
 
 if(MSVC)
-	target_compile_options(join_server PRIVATE /W4)
+	target_compile_options(mapReduce PRIVATE /W4)
 else()
-	target_compile_options(join_server PRIVATE -Wall -Wextra -Werror)
+	target_compile_options(mapReduce PRIVATE -Wall -Wextra -Werror)
 endif()
 
-install(TARGETS join_server RUNTIME DESTINATION bin)
+install(TARGETS mapReduce RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
