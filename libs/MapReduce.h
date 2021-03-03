@@ -21,9 +21,9 @@ class MapReduce
     public:
         MapReduce() = delete;
         MapReduce(std::string&, size_t&, size_t&);
+        
         bool setMapper(void (*_mapper)(std::ifstream&, pos_t&, pos_t&, vString_t&));
         bool setReducer(void (*_reducer)(vString_t&));
-
         void start();
 
     private:
@@ -35,9 +35,8 @@ class MapReduce
         void mapperThread(pos_t, pos_t, size_t);
 
         void (*m_reducerThread)(vString_t&);
-        void reducerThread(vString_t& StrIn)
-            {(*m_reducerThread) (StrIn);};
-        
+        void reducerThread(vString_t& StrIn);
+            
         size_t getHash(const std::string&);
 
         template <typename T1, typename T2>

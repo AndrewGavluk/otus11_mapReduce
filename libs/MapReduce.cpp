@@ -17,7 +17,8 @@ bool MapReduce::setMapper(void (*_mapper)(std::ifstream&, pos_t&, pos_t&,  vStri
 bool MapReduce::setReducer(void (*_reducer)(vString_t&))
 {return setFunction( m_reducerThread , _reducer);}
 
-// hash sorting by first carackter, good for string with different first char
+
+// hash sorting by first carackter, good for strings with different first char
 size_t MapReduce::getHash(const std::string& str ){ 
     const char& c = str[0];
     size_t pos = MapReduce::hasher.find(c);
@@ -26,6 +27,9 @@ size_t MapReduce::getHash(const std::string& str ){
         return pos / (MapReduce::hasher.size() / m_redNum);
     return 0;
 }
+
+void MapReduce::reducerThread(vString_t& StrIn)
+{(*m_reducerThread) (StrIn);}
 
 void MapReduce::mapperThread(pos_t begin , pos_t end , size_t counter)
 {
@@ -39,7 +43,7 @@ void MapReduce::mapperThread(pos_t begin , pos_t end , size_t counter)
 
     // shufle
     for (auto& str : thVector)
-        m_ReducerResults[getHash(str)].push(str);
+        m_ReducerResults[getHash(str)].push(str);     
 }
 
 void MapReduce::start()
@@ -68,9 +72,9 @@ void MapReduce::map()
     for (pos_t pos = part; pos<endPos; pos += part)
     {
         m_inputFile.seekg(pos, std::ios_base::beg);
+        // search the next end of line symbol
         while (m_inputFile.read(&temp,1) && temp!='\n' && !m_inputFile.fail()); 
         // {}
-        
         pos = m_inputFile.tellg();
         tasks.emplace_back(&MapReduce::mapperThread, std::ref(*this), std::ref(begin), std::ref(pos), counter++);
         begin = pos;
@@ -82,7 +86,6 @@ void MapReduce::map()
         if (task.joinable())
             task.join();
 }
-
 
 void MapReduce::reduce(){
 
