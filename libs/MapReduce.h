@@ -28,22 +28,24 @@ class MapReduce
         
         void split();
         void map();
-        void shuffle();
         void reduce();
 
         void (*m_mapperThread)(std::ifstream& fileIn, pos_t&, pos_t&, vString_t&); 
-        void mapperThread(std::ifstream& fileIn, pos_t begin , pos_t end , vString_t& vStr);
+        void mapperThread(pos_t, pos_t, size_t);
 
         void (*m_reducerThread)(vString_t&);
         void reducerThread(vString_t& StrIn)
             {(*m_reducerThread) (StrIn);};
+        
+        size_t getHash(const std::string&);
 
         template <typename T1, typename T2>
         bool setFunction(T1*, T2*);
 
+        static char const *hasher;
+
         v2String_t                              m_MapperResults;
         vTsvString                              m_ReducerResults;
-        vString_t                               m_sorterResults;
         std::vector<std::iostream::pos_type>    m_borders;
         std::ifstream                           m_inputFile;
         size_t                                  m_mapNum, m_redNum;
