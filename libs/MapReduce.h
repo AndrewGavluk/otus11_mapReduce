@@ -1,10 +1,12 @@
 #include <array>
 #include <algorithm>
+#include <condition_variable>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <string>
-#include <thread>
 #include <stdlib.h>
+#include <thread>
 #include <vector>
 
 #include "queue.h"
@@ -26,7 +28,6 @@ class MapReduce
 
     private:
         
-        void split();
         void map();
         void reduce();
 
@@ -42,12 +43,13 @@ class MapReduce
         template <typename T1, typename T2>
         bool setFunction(T1*, T2*);
 
-        static char const *hasher;
+        static const std::string hasher;
 
         v2String_t                              m_MapperResults;
         vTsvString                              m_ReducerResults;
-        std::vector<std::iostream::pos_type>    m_borders;
         std::ifstream                           m_inputFile;
+        std::mutex                              m_mutex; 
+        std::condition_variable                 m_cv;
         size_t                                  m_mapNum, m_redNum;
 };
 
