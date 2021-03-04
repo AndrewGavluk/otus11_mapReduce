@@ -1,6 +1,6 @@
 #include"MapReduce.h"
 
-const std::string MapReduce::hasher = "ABCDEFGHIJKLMNOPQRSTVWXYZabcdefghijlklmnopqrstvwxyz";
+const std::string MapReduce::hasher = "abcdefghijlklmnopqrstvwxyz";
 
 MapReduce::MapReduce(std::string& filename, size_t& _mapNum, size_t& _redNum) : m_filename{filename}, m_mapNum{_mapNum}, m_redNum{_redNum}
 {
@@ -22,7 +22,7 @@ bool MapReduce::setReducer(void (*_reducer)(vString_t&,  size_t& ))
 
 // hash sorting by first carackter, good for strings with different first char
 size_t MapReduce::getHash(const std::string& str ){ 
-    const char& c = str[0];
+    const char& c = std::tolower(str[0]);
     double pos = static_cast<double>(MapReduce::hasher.find(c));
     
     if (pos != std::string::npos){
@@ -107,7 +107,7 @@ void MapReduce::reduce(){
     std::vector<std::thread> tasks{m_redNum};
     
     for (size_t reducerIter = 0; reducerIter<m_redNum; ++reducerIter)
-        tasks.emplace_back(&MapReduce::reducerThread, std::ref(*this), reducerIter++ );  
+        tasks.emplace_back(&MapReduce::reducerThread, std::ref(*this), reducerIter );  
     
     for (auto& task : tasks  )
         if (task.joinable())
