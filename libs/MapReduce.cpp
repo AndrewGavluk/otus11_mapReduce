@@ -2,48 +2,58 @@
 
 const std::string MapReduce::hasher = "ABCDEFGHIJKLMNOPQRSTVWXYZabcdefghijlklmnopqrstvwxyz";
 
-MapReduce::MapReduce(std::string& filename, size_t& _mapNum, size_t& _redNum) : m_mapNum{_mapNum}, m_redNum{_redNum}
+MapReduce::MapReduce(std::string& filename, size_t& _mapNum, size_t& _redNum) : m_filename{filename}, m_mapNum{_mapNum}, m_redNum{_redNum}
 {
     m_MapperResults.reserve(_mapNum);
+    for (size_t i = 0; i<_mapNum; ++i )
+        m_MapperResults.emplace_back(10);
+
     m_ReducerResults.reserve(_redNum);
-    
-    m_inputFile.open(filename);
-    m_inputFile.seekg(0, std::ios_base::end);
+    for (size_t i = 0; i<_redNum; ++i )
+        m_ReducerResults.getVector().emplace_back(10);
 }
 
-bool MapReduce::setMapper(void (*_mapper)(std::ifstream&, pos_t&, pos_t&,  vString_t&))
+bool MapReduce::setMapper(void (*_mapper)(std::ifstream&, pos_t&, pos_t&, vString_t&, std::mutex&))
 {return setFunction( m_mapperThread , _mapper);}
 
-bool MapReduce::setReducer(void (*_reducer)(vString_t&))
+bool MapReduce::setReducer(void (*_reducer)(vString_t&,  size_t& ))
 {return setFunction( m_reducerThread , _reducer);}
 
 
 // hash sorting by first carackter, good for strings with different first char
 size_t MapReduce::getHash(const std::string& str ){ 
     const char& c = str[0];
-    size_t pos = MapReduce::hasher.find(c);
+    double pos = static_cast<double>(MapReduce::hasher.find(c));
     
-    if (pos != std::string::npos)
-        return pos / (MapReduce::hasher.size() / m_redNum);
+    if (pos != std::string::npos){
+        double buf = pos / MapReduce::hasher.size();
+        size_t s1 = buf * m_redNum;
+        return s1;
+    }
+        
     return 0;
 }
 
-void MapReduce::reducerThread(vString_t& StrIn)
-{(*m_reducerThread) (StrIn);}
+void MapReduce::reducerThread( size_t iter)
+{(*m_reducerThread) (m_ReducerResults[iter].getVector() , iter);}
 
-void MapReduce::mapperThread(pos_t begin , pos_t end , size_t counter)
+void MapReduce::mapperThread(pos_t begin , pos_t end ,vString_t& thVector)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
-	m_cv.wait(lock);
-    auto& thVector = m_MapperResults[counter]; 
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+	    m_cv.wait(lock);
+    }
     
     // entire function call
-    (*m_mapperThread) (m_inputFile, begin, end, thVector);
+    (*m_mapperThread) (m_inputFile, begin, end, thVector, m_mutex);
+    (void)begin;
+    (void)end;
     std::sort(thVector.begin(), thVector.end());
 
     // shufle
-    for (auto& str : thVector)
+    for (auto& str : thVector){
         m_ReducerResults[getHash(str)].push(str);     
+    }
 }
 
 void MapReduce::start()
@@ -53,11 +63,14 @@ void MapReduce::start()
         reduce();
     }
     else
-        std::cerr << "maper or reducer function not set";
+        std::cerr << "maper or reducer function not set\n";
 }
 
 void MapReduce::map()
 {
+        
+    m_inputFile.open(m_filename);
+    m_inputFile.seekg(0, std::ios_base::end);
     std::vector<std::thread> tasks;
 
     // loop init params
@@ -76,15 +89,17 @@ void MapReduce::map()
         while (m_inputFile.read(&temp,1) && temp!='\n' && !m_inputFile.fail()); 
         // {}
         pos = m_inputFile.tellg();
-        tasks.emplace_back(&MapReduce::mapperThread, std::ref(*this), std::ref(begin), std::ref(pos), counter++);
+        tasks.emplace_back(&MapReduce::mapperThread, std::ref(*this), std::ref(begin), std::ref(pos), std::ref(m_MapperResults[counter++]));
         begin = pos;
     }
-
+    std::this_thread::sleep_for (std::chrono::microseconds(500));
     m_cv.notify_all();
 
     for (auto& task : tasks  )
         if (task.joinable())
             task.join();
+
+    m_inputFile.close();
 }
 
 void MapReduce::reduce(){
@@ -92,7 +107,7 @@ void MapReduce::reduce(){
     std::vector<std::thread> tasks{m_redNum};
     
     for (size_t reducerIter = 0; reducerIter<m_redNum; ++reducerIter)
-        tasks.emplace_back(&MapReduce::reducerThread, std::ref(*this), std::ref(m_ReducerResults[reducerIter++].getVector()) );  
+        tasks.emplace_back(&MapReduce::reducerThread, std::ref(*this), reducerIter++ );  
     
     for (auto& task : tasks  )
         if (task.joinable())
