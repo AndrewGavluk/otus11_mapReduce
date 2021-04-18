@@ -21,7 +21,7 @@ bool MapReduce::setReducer(void (*_reducer)(vString_t&,  size_t& ))
 
 
 // hash sorting by first carackter, good for strings with different first char
-size_t MapReduce::getHash(const std::string& str ){ 
+size_t MapReduce::getHash(const std::string& str ) const{ 
     const char& c = std::tolower(str[0]);
     double pos = static_cast<double>(MapReduce::hasher.find(c));
     
@@ -34,8 +34,15 @@ size_t MapReduce::getHash(const std::string& str ){
     return 0;
 }
 
-void MapReduce::reducerThread( size_t iter)
-{(*m_reducerThread) (m_ReducerResults[iter].getVector() , iter);}
+void MapReduce::reducerThread( size_t iter) const
+{
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+	    m_cv.wait(lock);
+    }
+
+    (*m_reducerThread) (m_ReducerResults[iter].getVector() , iter);
+}
 
 void MapReduce::mapperThread(pos_t begin , pos_t end ,vString_t& thVector)
 {
@@ -109,6 +116,9 @@ void MapReduce::reduce(){
     for (size_t reducerIter = 0; reducerIter<m_redNum; ++reducerIter)
         tasks.emplace_back(&MapReduce::reducerThread, std::ref(*this), reducerIter );  
     
+    std::this_thread::sleep_for (std::chrono::microseconds(1000));
+    m_cv.notify_all();
+
     for (auto& task : tasks  )
         if (task.joinable())
             task.join();

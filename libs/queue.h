@@ -21,14 +21,14 @@ class tsVector
         tsVector(tsVector&&) = default;
         void push(T);
         T get(size_t&);
-        std::vector<T>& getVector() { return m_vector;}
+        std::vector<T>& getVector();
         void reserve(size_t num) { m_vector.reserve(num);}
-        T& operator [] (size_t);
+        T& operator [] (size_t) const;
         void setEOF();
     private:
-        std::vector<T> m_vector;
-        std::mutex m_mutex; //m_mutexBrackets; 
-        std::condition_variable m_cv;
+        mutable std::vector<T> m_vector;
+        mutable std::mutex m_mutex; //m_mutexBrackets; 
+        mutable std::condition_variable m_cv;
         bool m_EOF; 
 };
 
@@ -55,13 +55,20 @@ T tsVector<T>::get(size_t& number )
 }
 
 template <typename T>
+std::vector<T>& tsVector<T>::getVector() 
+{ 
+    std::unique_lock<std::mutex> lock(m_mutex);
+    return m_vector;
+}
+
+template <typename T>
 tsVector<T>::tsVector(const tsVector& other){
     (void)other;
 }
 
 
 template <typename T>
-T& tsVector<T>::operator [] (size_t index){
+T& tsVector<T>::operator [] (size_t index) const{
     std::unique_lock<std::mutex> lock(m_mutex);
     return m_vector[index];
 }

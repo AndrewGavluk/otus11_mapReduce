@@ -37,9 +37,9 @@ class MapReduce
         void mapperThread(pos_t, pos_t, vString_t&);
 
         void (*m_reducerThread)(vString_t&,  size_t& );
-        void reducerThread(size_t );
+        void reducerThread(size_t ) const;
             
-        size_t getHash(const std::string&);
+        size_t getHash(const std::string&) const;
 
         template <typename T>
         bool setFunction(T&, T&);
@@ -50,12 +50,10 @@ class MapReduce
         v2TsvString                             m_ReducerResults;
         std::string                             m_filename;
         std::ifstream                           m_inputFile;
-        std::mutex                              m_mutex; 
-        std::condition_variable                 m_cv;
+        mutable std::mutex                      m_mutex; 
+        mutable std::condition_variable         m_cv;
         size_t                                  m_mapNum, m_redNum;
 };
-
-
 
 template <typename T>
         bool MapReduce::setFunction(T& f1, T& f2)

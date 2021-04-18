@@ -52,7 +52,7 @@ void reduceFunction(MapReduce::vString_t& vectorIn, size_t& taskNumber)
         sizePred = sizeStr;
     }
     std::ofstream out;
-    out.open("reducer_" + std::to_string(taskNumber) + "_.log");
+    out.open("reducer_" + std::to_string(taskNumber) +  "_.log");
     out <<  "minimum prefix size = " << answer;
     out.close();
 }
